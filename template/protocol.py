@@ -17,8 +17,14 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import typing
+from fastapi import HTTPException, Response
+from typing import Optional, Any, Dict
 import bittensor as bt
+from loguru import logger
+from pydantic import BaseModel
+
+import base64
+
 
 # TODO(developer): Rewrite with your protocol definition.
 
@@ -40,37 +46,49 @@ import bittensor as bt
 #   assert dummy_output == 2
 
 
-class Dummy(bt.Synapse):
+class ValidatorRequest(BaseModel):
+    data: Dict[str, Any]
+        
+    
+class Translate(bt.Synapse):
     """
-    A simple dummy protocol representation which uses bt.Synapse as its base.
-    This protocol helps in handling dummy request and response communication between
-    the miner and the validator.
+    Base class for Synapse communication object for translating text.
 
     Attributes:
-    - dummy_input: An integer value representing the input request sent by the validator.
-    - dummy_output: An optional integer value which, when filled, represents the response from the miner.
+        validator_request: Optional[MinerRequest]. accepts a dictionary with the values:
+            - input: str - the text to be translated
+            - task_string: Enum[TASK_STRING] - the task to be performed
+            - source_language: Enum[TARGET_LANGUAGE] - the source language of the text
+            - target_language: Enum[TARGET_LANGUAGE] - the target language of the text
+        miner_response: Optional[Response] = None - normal response object of the miners
     """
 
     # Required request input, filled by sending dendrite caller.
-    dummy_input: int
+    validator_request: Optional[ValidatorRequest] = None
 
     # Optional request output, filled by receiving axon.
-    dummy_output: typing.Optional[int] = None
+    miner_response: Optional[Any] = None
 
-    def deserialize(self) -> int:
+    def deserialize(self, value) -> str:
         """
-        Deserialize the dummy output. This method retrieves the response from
-        the miner in the form of dummy_output, deserializes it and returns it
-        as the output of the dendrite.query() call.
-
+        Deserializes the given string from a base64 encoded string.
+        
         Returns:
-        - int: The deserialized response, which in this case is the value of dummy_output.
-
-        Example:
-        Assuming a Dummy instance has a dummy_output value of 5:
-        >>> dummy_instance = Dummy(dummy_input=4)
-        >>> dummy_instance.dummy_output = 5
-        >>> dummy_instance.deserialize()
-        5
+         - str: unencoded string
         """
-        return self.dummy_output
+        try:
+            return base64.b64decode(value.text).decode("utf-8")
+        except HTTPException as e:
+            logger.error(f"failed to deserialize {e}")
+            return value.text
+        
+    def serilize(self, value) -> str:
+        """
+        Serializes the given string into a base64 encoded string.
+        
+        Returns:
+         - str: encoded string
+        """
+        return base64.b64encode(value.encode("utf-8")).decode("utf-8") + "\n"
+    
+        

@@ -1,0 +1,11 @@
+{
+    "translation": {
+        "url": "https://registrar-cellium.ngrok.app",
+        "endpoint": "/modules/translation",
+        "path": "modules/translation",
+        "name": "translation",
+        "description": "Translate text2speech(t2t), t2s, s2t, and s2s.\n    Args:\n    - input: base64encoded audio or non encoded text string\n    - task_string: enum[TASK_STRINGS]\n    - target_language: enum[TARGET_LANGUAGES]\n    - source_language: enum[TARGET_LANGUAGES]",
+        "install": ["python", "-m", "modules.install_module"]
+    }
+
+}

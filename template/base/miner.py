@@ -20,13 +20,18 @@ import asyncio
 import threading
 import argparse
 import traceback
+import pickle
 
 import bittensor as bt
 
 from template.base.neuron import BaseNeuron
 from template.utils.config import add_miner_args
+from neurons.config import miner_config
 
 from typing import Union
+
+config = miner_config()
+
 
 class BaseMinerNeuron(BaseNeuron):
     """
@@ -40,6 +45,10 @@ class BaseMinerNeuron(BaseNeuron):
         super().add_args(parser)
         add_miner_args(cls, parser)
 
+    @classmethod
+    def save_state(cls):
+        pass
+    
     def __init__(self, config=None):
         super().__init__(config=config)
 
@@ -70,7 +79,7 @@ class BaseMinerNeuron(BaseNeuron):
         self.thread: Union[threading.Thread, None] = None
         self.lock = asyncio.Lock()
 
-    def run(self):
+    async def run(self):
         """
         Initiates and manages the main loop for the miner on the Bittensor network. The main loop handles graceful shutdown on keyboard interrupts and logs unforeseen errors.
 
@@ -101,7 +110,7 @@ class BaseMinerNeuron(BaseNeuron):
         bt.logging.info(
             f"Serving miner axon {self.axon} on network: {self.config.subtensor.chain_endpoint} with netuid: {self.config.netuid}"
         )
-        self.axon.serve(netuid=self.config.netuid, subtensor=self.subtensor)
+        await self.axon.serve(netuid=self.config.netuid, subtensor=self.subtensor)
 
         # Start  starts the miner's axon, making it active on the network.
         self.axon.start()
